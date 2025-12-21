@@ -1,4 +1,5 @@
 const { User, MedicalRecord } = require('./models');
+const bcrypt = require('bcryptjs');
 
 async function seedDatabase() {
   try {
@@ -12,72 +13,22 @@ async function seedDatabase() {
 
   console.log('Seeding vulnerable server...');
 
-  // create admin users
-  const admin = await User.create({
-    username: 'admin',
-    password: 'secret123',
-    role: 'admin',
-    fullName: 'System Administrator',
-    ssn: '999-00-9999'
-  });
+  // helper to hash
+  const hash = (p) => bcrypt.hashSync(p, 10);
 
-  const admin2 = await User.create({
-    username: 'superadmin',
-    password: 'admin456',
-    role: 'admin',
-    fullName: 'Super Administrator',
-    ssn: '888-77-8888'
-  });
+  // create admin users (hashed passwords)
+  const admin = await User.create({ username: 'admin', password: hash('secret123'), role: 'admin', fullName: 'System Administrator', ssn: '999-00-9999' });
+  const admin2 = await User.create({ username: 'superadmin', password: hash('admin456'), role: 'admin', fullName: 'Super Administrator', ssn: '888-77-8888' });
 
   // create doctor users
-  const doctor = await User.create({
-    username: 'doctor1',
-    password: 'doctor123',
-    role: 'doctor',
-    fullName: 'Dr. House',
-    ssn: '123-45-6789'
-  });
-
-  const doctor2 = await User.create({
-    username: 'doctor2',
-    password: 'doctor456',
-    role: 'doctor',
-    fullName: 'Dr. Watson',
-    ssn: '234-56-7890'
-  });
+  const doctor = await User.create({ username: 'doctor1', password: hash('doctor123'), role: 'doctor', fullName: 'Dr. House', ssn: '123-45-6789' });
+  const doctor2 = await User.create({ username: 'doctor2', password: hash('doctor456'), role: 'doctor', fullName: 'Dr. Watson', ssn: '234-56-7890' });
 
   // create patient users
-  const patient1 = await User.create({
-    username: 'patient1',
-    password: 'patient123',
-    role: 'patient',
-    fullName: 'John Doe',
-    ssn: '000-11-2222'
-  });
-
-  const patient2 = await User.create({
-    username: 'patient2',
-    password: 'patient123',
-    role: 'patient',
-    fullName: 'Jane Smith',
-    ssn: '000-33-4444'
-  });
-
-  const patient3 = await User.create({
-    username: 'patient3',
-    password: 'patient789',
-    role: 'patient',
-    fullName: 'Bob Johnson',
-    ssn: '111-22-3333'
-  });
-
-  const patient4 = await User.create({
-    username: 'patient4',
-    password: 'patient999',
-    role: 'patient',
-    fullName: 'Alice Williams',
-    ssn: '222-33-4444'
-  });
+  const patient1 = await User.create({ username: 'patient1', password: hash('patient123'), role: 'patient', fullName: 'John Doe', ssn: '000-11-2222' });
+  const patient2 = await User.create({ username: 'patient2', password: hash('patient123'), role: 'patient', fullName: 'Jane Smith', ssn: '000-33-4444' });
+  const patient3 = await User.create({ username: 'patient3', password: hash('patient789'), role: 'patient', fullName: 'Bob Johnson', ssn: '111-22-3333' });
+  const patient4 = await User.create({ username: 'patient4', password: hash('patient999'), role: 'patient', fullName: 'Alice Williams', ssn: '222-33-4444' });
 
   // create medical records
   await MedicalRecord.create({
