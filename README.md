@@ -1,4 +1,4 @@
-## NoSQL Injection – Vulnerable Server (Educational)
+## NoSQL Injection – Vulnerable Server ( ## Patched Version -- https://github.com/libentadele/Reol-Vuln-API/tree/patched**)
 
 This project is a deliberately vulnerable backend application built to demonstrate real NoSQL injection attacks against MongoDB.
 
